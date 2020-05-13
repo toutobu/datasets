@@ -1,0 +1,16 @@
+#+TITLE: Scraper
+
+* Description
+Scraper for toutobu.
+
+Scraping sites:
++ [[https://business-mail.jp/][ビジネスメールの教科書]]
++ [[https://email.chottu.net/index.html][ビジネスメールの書き方～文例（社内メール・社外メール・社交メール）～]]
+
+* Usage
+#+begin_src bash
+$ cd business-mail.jp && make && mv business-mail.jp-*.tar.gz .
+$ cd ..
+$ cd email.chottu.net && make && mv email.chottu.net-+.tar.gz .
+$ cd ..
+#+end_src

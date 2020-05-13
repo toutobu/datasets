@@ -1,0 +1,55 @@
+#!/usr/bin/env node
+
+const argv = require('optimist').argv
+const cheerio = require('cheerio')
+const { RequestError, delayRandom, getLogger } = require('utils')
+const { promisify } = require('util')
+const request = promisify(require('request'))
+const striptags = require('striptags')
+
+const log = getLogger('business-mail.jp')
+
+const toHtml = (el) => striptags(cheerio.text(el))
+
+class EmptyContentError extends Error {}
+
+async function fetchExample(url) {
+  const { statusCode, body } = await request(url)
+
+  if (statusCode >= 400) {
+    throw new RequestError(statusCode)
+  }
+
+  const $ = cheerio.load(body)
+
+  if (!$('.mailtxt').length) {
+    throw new EmptyContentError(url)
+  }
+
+  return {
+    title: toHtml($('.mailtxt h2')),
+    content: toHtml($('.mailtxt p')),
+  }
+}
+
+(async () => {
+  const delayed = delayRandom(mu = 1., sigma = .5)
+  const url = argv._[0]
+
+  log(`Fetch an example from ${url}...`)
+
+  let result
+
+  try {
+    result = await delayed(() => fetchExample(url))
+  } catch (e) {
+    if (e instanceof EmptyContentError) {
+      log(`Failed to fetch an example from ${url}...`)
+      return
+    } else {
+      throw e
+    }
+  }
+
+  process.stdout.write(JSON.stringify(result))
+})()

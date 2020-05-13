@@ -1,0 +1,18 @@
+{
+  "name": "datasets",
+  "version": "0.0.1",
+  "description": "* Description Datasets for toutobu.",
+  "main": "index.js",
+  "dependencies": {
+    "business-mail.jp": "file:business-mail.jp",
+    "cheerio": "^1.0.0-rc.3",
+    "email.chottu.net": "file:email.chottu.net",
+    "request": "^2.88.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT"
+}

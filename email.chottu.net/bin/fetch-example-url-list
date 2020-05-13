@@ -1,0 +1,47 @@
+#!/usr/bin/env node
+
+const cheerio = require('cheerio')
+const { RequestError, delayRandom, getLogger } = require('utils')
+const { promisify } = require('util')
+const request = promisify(require('request'))
+
+const CATEGORY_LIST_URLS = [
+  'https://email.chottu.net/example/in-office',
+  'https://email.chottu.net/example/out-office',
+  'https://email.chottu.net/example/communication',
+]
+
+const log = getLogger('email.chottu.net')
+
+async function fetchAnchorUrlsOf(pageUrl, anchorSelector) {
+  const { statusCode, body } = await request(pageUrl)
+
+  if (statusCode >= 400) {
+    throw new RequestError(statusCode)
+  }
+
+  const $ = cheerio.load(body)
+
+  return $(anchorSelector)
+    .map((_i, x) => $(x).attr('href'))
+    .get()
+}
+
+(async () => {
+  const delayed = delayRandom()
+
+  log('Fetch category url list...')
+
+  for (const categoryUrl of CATEGORY_LIST_URLS) {
+    log(`Fetch example urls of ${categoryUrl}...`)
+
+    const urls = await delayed(() => {
+      return fetchAnchorUrlsOf(
+        categoryUrl + '/index.html', 'ul.example li a')
+    })
+
+    for (const url of urls) {
+      process.stdout.write(categoryUrl + '/' + url + '\n');
+    }
+  }
+})()

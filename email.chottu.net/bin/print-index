@@ -1,0 +1,71 @@
+#!/usr/bin/env node
+
+const argv = require('optimist').argv
+const crypto = require('crypto')
+const fsPromises = require('fs').promises
+const { delayRandom, getLogger } = require('utils')
+const path = require('path')
+const url = require('url')
+
+const baseName = 'business-mail.jp'
+const log = getLogger(baseName)
+
+class FileNotFoundError extends Error {}
+
+function idOf(urlStr) {
+  const parsed = url.parse(urlStr)
+  return parsed.path
+    ? parsed.path.replace(/^\/example\/(.*)\.html$/, '$1')
+    : ''
+}
+
+async function createEntry(url, jsonDir) {
+  const id = idOf(url)
+  const jsonFile = `${id.replace(/\//, '-')}.json`
+  const jsonPath = path.join(jsonDir, jsonFile)
+
+  let content
+
+  try {
+    content = await fsPromises.readFile(jsonPath, 'utf8')
+  } catch (e) {
+    throw new FileNotFoundError(e)
+  }
+
+  const hash = crypto.createHash('sha256').update(content).digest('hex')
+
+  return {
+    id,
+    file: jsonFile,
+    hash,
+  }
+}
+
+(async () => {
+  const [urlListFile, jsonDir] = argv._
+  const viewedAt = argv['viewed-at'] || new Date().toISOString()
+
+  log('Output index file...')
+
+  const urlList = await fsPromises.readFile(urlListFile, 'utf8')
+  const urls = urlList.split('\n')
+
+  for (const url of urls) {
+    let result
+
+    try {
+      result = await createEntry(url, jsonDir)
+    } catch (e) {
+      if (e instanceof FileNotFoundError) {
+        log(`File of ${url} dose not exist.`)
+        continue
+      } else {
+        throw e
+      }
+    }
+
+    const { id, file, hash } = result
+
+    process.stdout.write([id, file, url, hash, viewedAt].join(',') + '\n')
+  }
+})()
